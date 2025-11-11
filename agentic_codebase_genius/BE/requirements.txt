@@ -1,0 +1,6 @@
+
+# Environment variable management
+python-dotenv>=1.0.0
+
+# Git repository handling (optional but recommended)
+GitPython>=3.1.0

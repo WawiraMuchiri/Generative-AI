@@ -1,135 +1,60 @@
-# ============================================
+# ================================================================
 # main.jac
-# Domain-specific nodes and routing for Codebase Genius
-# Specialized agents inherit from Toolbox (defined in agentic_core.jac)
-# ============================================
+# Entry point of the agentic multi-agent system
+# ------------------------------------------------
+# Coordinates all agents using the supervisor agent
+# ================================================================
 
 # -------------------------------------------------
-# Imports
+# Includes and Imports
 # -------------------------------------------------
-import from agentic_core;                   # Import core nodes and walkers
-import from utils { get_current_datetime };  # Utility function for timestamps
-import from py_module { os, shutil };        # Python modules to clone repos or handle files
+include agentic_core;      # brings in agentic_core.jac
+include utils;             # brings in helper utilities
 
 # -------------------------------------------------
-# LLM Model (optional: for summarization or reasoning)
-# This can be replaced by any LLM backend
-# -------------------------------------------------
-glob llm = Model(model_name="gpt-4o", verbose=False);
-
-# -------------------------------------------------
-# RoutingNodes Enum
-# Extend the core enum to include all specialized agents
+# Enum for routing agent tasks
 # -------------------------------------------------
 enum RoutingNodes {
-    GENERAL_CHAT = "GeneralChat",
-    REPO_MAPPER = "RepoMapper",
-    CODE_ANALYZER = "CodeAnalyzer",
-    DOC_GENIE = "DocGenie"
+    GENERAL_CHAT = "GeneralChat";
+    REPO_MAPPER = "RepoMapper";
+    CODE_ANALYZER = "CodeAnalyzer";
 }
 
 # -------------------------------------------------
-# Node: RepoMapper
-# Responsible for cloning the repository, generating file-tree, summarizing README
+# Main supervisor node (entry point)
 # -------------------------------------------------
-node RepoMapper(Toolbox) {
-    has repo_url: str = "";
+walker SupervisorEntry {
+    has supervisor_agent;
 
-    # Generate a structured file-tree representation
-    def generate_file_tree(repo_path: str) -> list abs;
+    can init {
+        print("🚀 Initializing Supervisor System...");
+        spawn here -> SupervisorAgent as supervisor_agent;
+        supervisor_agent.setup_agents();
+        print("✅ Supervisor system initialized successfully.\n");
+    }
 
-    # Summarize README.md or entry-point docs
-    def summarize_readme(repo_path: str) -> str abs;
-
-    # Route and run: orchestrates RepoMapper tasks
-    def route_and_run(utterance: str, history: str) -> str abs;
-}
-
-# -------------------------------------------------
-# Node: CodeAnalyzer
-# Parses source code and builds Code Context Graph (CCG)
-# -------------------------------------------------
-node CodeAnalyzer(Toolbox) {
-    has repo_path: str = "";
-    has ccg: dict = {};   # Stores relationships between functions, classes, modules
-
-    # Parse source files using a parser like Tree-sitter
-    def parse_source_files(repo_path: str) -> list abs;
-
-    # Build the Code Context Graph
-    def build_ccg(parsed_files: list) -> dict abs;
-
-    # Query relationships in the CCG
-    def query_ccg(query_str: str) -> str abs;
-
-    # Route and run: orchestrates code analysis
-    def route_and_run(utterance: str, history: str) -> str abs;
-}
-
-# -------------------------------------------------
-# Node: DocGenie
-# Converts structured data into human-readable markdown
-# -------------------------------------------------
-node DocGenie(Toolbox) {
-    has repo_name: str = "";
-    has markdown_path: str = "";
-
-    # Generate markdown documentation from file-tree + CCG
-    def generate_markdown(file_tree: list, ccg: dict, summary: str) -> str abs;
-
-    # Route and run: orchestrates markdown generation
-    def route_and_run(utterance: str, history: str) -> str abs;
-}
-
-# -------------------------------------------------
-# Node: GeneralChat
-# Simple chat agent for testing or user interaction
-# -------------------------------------------------
-node GeneralChat(Toolbox) {
-    def chat(utterance: str, history: str) -> str by llm();
-    def route_and_run(utterance: str, history: str) -> str by llm(
-        method="ReAct",
-        tools=([self.chat])
-    );
-}
-
-# -------------------------------------------------
-# Supervisor Walker: Code Genius
-# Routes tasks to appropriate agents based on utterance and project state
-# -------------------------------------------------
-walker code_genius(agent) {
-    def route_to_node(utterance: str, history: str) -> RoutingNodes {
-        # Example routing logic (can be enhanced with LLM reasoning)
-        if "clone repo" in utterance or "repo" in utterance {
-            return RoutingNodes.REPO_MAPPER;
-        }
-        if "analyze code" in utterance or "build ccg" in utterance {
-            return RoutingNodes.CODE_ANALYZER;
-        }
-        if "generate doc" in utterance or "documentation" in utterance {
-            return RoutingNodes.DOC_GENIE;
-        }
-        # Fallback to general chat
-        return RoutingNodes.GENERAL_CHAT;
+    can handle_request(task_type: str, task_input: str) {
+        print(f"📩 Handling request of type: {task_type}");
+        supervisor_agent.route_task(task_type, task_input);
     }
 }
 
 # -------------------------------------------------
-# Utility walker: list all generated docs (optional)
+# Entry execution
 # -------------------------------------------------
-walker get_all_docs {
-    obj __specs__ {
-        static has auth: bool = False;
-    }
+walker main {
+    can run {
+        print("🧠 Starting main workflow...\n");
 
-    can get_all_docs with `root entry {
-        # Fetch all DocGenie nodes and return their markdown paths
-        doc_nodes = [here --> (`?DocGenie)];
-        if not doc_nodes {
-            report "No documentation found.";
-            disengage;
-        }
+        # Create supervisor entry walker
+        spawn here -> SupervisorEntry as entry;
+        entry.init();
 
-        report [node.markdown_path for node in doc_nodes];
+        # Example simulation
+        entry.handle_request(RoutingNodes.GENERAL_CHAT, "Explain the concept of multi-agent systems.");
+        entry.handle_request(RoutingNodes.REPO_MAPPER, "Analyze directory structure for missing modules.");
+        entry.handle_request(RoutingNodes.CODE_ANALYZER, "Review code quality in utils.jac");
+
+        print("\n✅ All tasks processed successfully.");
     }
 }
