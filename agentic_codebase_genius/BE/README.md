@@ -1,88 +1,98 @@
 
-## **1. Functional Requirements (FRs)**
+```markdown
+# 🧠 Codebase Genius
 
-These define the **core capabilities of your multi-agent system**:
+## Overview
+Codebase Genius is an agentic system built to autonomously analyze, understand, and document software repositories. The system uses a multi-agent architecture where each agent performs specialized tasks — from repository mapping and code graph generation to intelligent markdown documentation.
 
-### **1.1 Supervisor Agent (Code Genius)**
+Given a GitHub repository URL, Codebase Genius:
 
-* FR1: Accept a public GitHub repository URL via API or CLI.
-* FR2: Validate the repository URL (reachable, correct format, public/private access).
-* FR3: Orchestrate workflow between subordinate agents based on repository structure and progress.
-* FR4: Aggregate intermediate outputs from subordinate agents and generate a final documentation report.
-* FR5: Prioritize “high-impact” files first (e.g., main.py, app.py).
-* FR6: Expose an API endpoint to trigger documentation generation and download results.
+- Clones and scans the repository.  
+- Maps the folder and file structure.  
+- Extracts and analyzes classes, functions, and relationships.  
+- Generates a clean, readable markdown documentation file.
 
-### **1.2 Repo Mapper Agent**
+## Features
 
-* FR7: Clone the repository into a temporary workspace.
-* FR8: Generate a file-tree representation (folders/files), ignoring irrelevant directories like `.git` or `node_modules`.
-* FR9: Summarize README.md or equivalent entry-point files into a concise overview.
-* FR10: Provide file-tree and summary to the Supervisor for workflow planning.
+- Automates repository analysis and mapping.  
+- Generates a Code Context Graph (CCG) for functions, classes, and modules.  
+- Produces high-quality markdown documentation.  
+- Supports Python and Jac codebases.  
+- Modular agent design for extensibility.
 
-### **1.3 Code Analyzer Agent**
+## Project Structure
 
-* FR11: Parse source code files (Python and Jac) using Tree-sitter or similar parser.
-* FR12: Construct a **Code Context Graph (CCG)**:
+The project is organized into multiple files:
 
-  * Nodes: functions, classes, modules.
-  * Edges: function calls, inheritance, composition.
-* FR13: Provide query APIs for Supervisor or DocGenie (e.g., “Which functions call X?”).
-* FR14: Iterate over high-impact modules first, then utility modules.
+```
 
-### **1.4 DocGenie Agent**
+Codebase-Genius/
+│
+├── main.jac               # Supervisor and main entry point
+├── agentic_core.jac       # Core abstractions and utilities
+├── main.impl.jac          # Implementation of workflow and analysis
+├── utils.jac              # Helper functions
+├── outputs/               # Generated documentation output
+│   └── generated_docs/
+└── README.md              # Documentation
 
-* FR15: Convert structured data (file-tree + CCG) into markdown documentation.
-* FR16: Include project overview, installation, usage, API reference sections.
-* FR17: Include diagrams showing relationships between functions/classes.
-* FR18: Ensure logical ordering, clear prose, bullet points, tables where necessary.
-* FR19: Save output locally under `./outputs/<repo_name>/docs.md`.
+````
 
-### **1.5 System API / Interaction**
+### 1. Supervisor & Main (main.jac)
+- Orchestrates all agents.  
+- Receives GitHub repository URL.  
+- Delegates tasks and aggregates results into final output.
 
-* FR20: Provide HTTP interface (Jac server with walkers) to supply repository URL.
-* FR21: Return error messages if repository is invalid, inaccessible, or unsupported.
+### 2. Core (agentic_core.jac)
+- Defines reusable nodes, walkers, and utilities.  
+- Shared abstractions for all agents.
 
+### 3. Implementation (main.impl.jac)
+- Implements workflow logic for repository mapping, code analysis, and documentation generation.
+
+### 4. Utilities (utils.jac)
+- Helper functions for parsing, file handling, and formatting.
+
+## Prerequisites
+Before running Codebase Genius, make sure you have the following installed:
+
+- Python 3.12+  
+- JAC language runtime (`jaclang`)  
+  ```bash
+  pip install jaclang
+````
+
+* byLLM package (if using LLM integration)
+
+  ```bash
+  pip install byllm
+  ```
+* An LLM provider (e.g., OpenAI, Gemini) configured in your environment.
+
+## How to Run
+
+Clone this repository:
+
+```bash
+git clone https://github.com/WawiraMuchiri/Generative-AI.git
+cd Codebase-Genius
+```
+
+Run the JAC program:
+
+```bash
+jac serve main.jac
+```
+
+Provide a GitHub repository URL as input. The system will:
+
+* Clone the repository.
+* Map the folder/file structure.
+* Generate documentation based on analysis.
+
+## License
+
+This project is licensed under the MIT License. You are free to use, modify, and distribute it as long as proper attribution is provided.
+
+````
 ---
-
-## **2. Non-Functional Requirements (NFRs)**
-
-These define **how the system should behave**, including performance, usability, maintainability, and robustness:
-
-### **2.1 Performance**
-
-* NFR1: Should handle medium-sized Python/Jac repositories (up to ~50k lines) within reasonable time (<5 minutes for typical repos).
-* NFR2: File-tree generation, CCG construction, and markdown generation should be memory-efficient.
-
-### **2.2 Reliability & Robustness**
-
-* NFR3: Gracefully handle invalid URLs, private repositories, unsupported languages, and parsing errors.
-* NFR4: Ensure no partial or corrupt documentation is generated on failures; rollback or provide informative error.
-
-### **2.3 Scalability & Extensibility**
-
-* NFR5: Agents should be modular; new agents can be added without major rework.
-* NFR6: Design should allow extension to other languages (e.g., JavaScript, Java).
-* NFR7: CCG and file-tree structures should support arbitrarily deep repositories.
-
-### **2.4 Usability**
-
-* NFR8: API endpoint or CLI must return clear success/failure messages.
-* NFR9: Generated markdown should be readable by humans, not just machines.
-
-### **2.5 Maintainability & Code Quality**
-
-* NFR10: Follow Jac best practices: modular nodes, walkers, utility functions.
-* NFR11: Properly documented code for future developers.
-* NFR12: Separate core abstractions (agentic_core.jac), domain logic (main.jac), implementation (main.impl.jac), utilities (utils.jac).
-
-### **2.6 Security**
-
-* NFR13: Temporary clone directories must be sandboxed and cleaned after execution.
-* NFR14: No execution of untrusted code beyond safe parsing; no arbitrary remote code execution.
-
----
-
-✅ **Strategic Takeaway:**
-
-* Functional requirements define **what each agent does** and how the Supervisor orchestrates the workflow.
-* Non-functional requirements ensure **robustness, modularity, and clarity**, which is crucial for a multi-agent system where LLMs and parsing tools interact.
